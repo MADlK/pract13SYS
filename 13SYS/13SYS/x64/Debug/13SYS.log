@@ -1,0 +1,4 @@
+﻿  13SYS.cpp
+C:\Users\st310-09\Desktop\13SYS\13SYS.cpp(11,18): warning C4305: инициализация: усечение из "__int64" в "long"
+C:\Users\st310-09\Desktop\13SYS\13SYS.cpp(11,18): warning C4309: инициализация: усечение константного значения
+  13SYS.vcxproj -> C:\Users\st310-09\Desktop\13SYS\x64\Debug\13SYS.exe
