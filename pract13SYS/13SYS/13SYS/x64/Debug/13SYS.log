@@ -1,0 +1,10 @@
+﻿  13SYS.cpp
+C:\Users\st310-09\Desktop\Новая папка\pract13SYS\13SYS\13SYS.cpp(104,38): warning C4244: -=: преобразование "double" в "long", возможна потеря данных
+C:\Users\st310-09\Desktop\Новая папка\pract13SYS\13SYS\13SYS.cpp(123,34): warning C4244: -=: преобразование "double" в "long", возможна потеря данных
+C:\Users\st310-09\Desktop\Новая папка\pract13SYS\13SYS\13SYS.cpp(145,43): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\st310-09\Desktop\Новая папка\pract13SYS\13SYS\13SYS.cpp(153,57): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\st310-09\Desktop\Новая папка\pract13SYS\13SYS\13SYS.cpp(205,50): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\st310-09\Desktop\Новая папка\pract13SYS\13SYS\13SYS.cpp(208,32): warning C4244: -=: преобразование "double" в "long", возможна потеря данных
+C:\Users\st310-09\Desktop\Новая папка\pract13SYS\13SYS\13SYS.cpp(213,63): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\st310-09\Desktop\Новая папка\pract13SYS\13SYS\13SYS.cpp(216,32): warning C4244: -=: преобразование "double" в "long", возможна потеря данных
+  13SYS.vcxproj -> C:\Users\st310-09\Desktop\Новая папка\pract13SYS\13SYS\x64\Debug\13SYS.exe
