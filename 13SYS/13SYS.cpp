@@ -1,14 +1,11 @@
-﻿// 13SYS.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//
-
-#include <iostream>
+﻿#include <iostream>
 #include <Windows.h>
 #include <Conio.h>
 using namespace std;
 
 struct Boss
 {
-    long health =9000000000;
+    long health = 9000000;
     int resist = 44;
     int damage = 73843;
     int specialDamage = 150000;
@@ -18,7 +15,7 @@ struct Boss
 };
 struct Player
 {
-    long health = 500000;
+    long health = 70000;
     int damage = 12000;
     int specialDamage = 30000;
     int specialCooldown = 5000;
@@ -29,8 +26,26 @@ struct Player
 
 };
 
+struct Top
+{
+	int id;
+	int totaldamage;
+};
+
+HANDLE dmgSemafor;
+HANDLE PlayersDied;
+HANDLE BOSSSPECDMG;
+HANDLE PlayerWaitBossSpecDMG;
+HANDLE endgame;
+
+
 //количество игроков
 int playercount;
+//количество живых игроков
+int playerCountLife;
+Top topthree[10] = {0};
+
+
 //массив игроков
 Player players[10];
 //босс
@@ -79,130 +94,212 @@ bool dodge()
     return false;
 
 }
+//метод нанесения обычных атак рандомному живому игроку
+void BossDMG()
+{
+    int playerid;
+    do
+    {
+        playerid = getRandomPlayer(playercount);
+    } while (players[playerid].health <= 0);
 
-
-
+    if (dodge())
+    {
+        cout << players[playerid].name << "Уклонрился от атаки" << endl;
+    }
+    else
+    {
+        
+        double EndSpDmg = (boss.damage / 100) * (100 - players[playerid].defense);
+        players[playerid].health -=  EndSpDmg;
+        cout << players[playerid].name << "получил урон от босса" << EndSpDmg << endl;
+    }
+}
+//метод нанесения спуц. атак всем живым игрокам
+void SPECIALDAMAGEBOSS(Player p)
+{
+    
+    
+        if (dodge())
+        {
+            cout << p.name << " уклонился от спец. атаки босса" << endl;
+        }
+        else
+        {
+            double SpDmg = boss.damage * (1 - 0.05 * (playercount - 1));
+            double EndSpDmg = (SpDmg / 100) * (100 - p.defense);
+            p.health -= EndSpDmg;
+            cout << p.name << " получил урон спец. атаки босса"<< EndSpDmg<< endl;
+        }
+        
+    
+    
+}
 //поток босса
 DWORD WINAPI BossThread(LPVOID B)
 {
-    Boss* bosss = (Boss*)B;
+    
     long cdAttack = GetTickCount();
     long cdSpecialAttack = GetTickCount();
-    while (bosss->health > 0)
+    
+    while (boss.health > 0 && playerCountLife>0)
     {
+        
         /*если время с прошлой атаки + время ожидания
             больше чем текущее время, то можно бить обычной атакой*/
-        if(cdAttack + bosss->attackCooldown > GetTickCount())
+        if(cdAttack + boss.attackCooldown < GetTickCount())
         {
-            
-            int playerid = getRandomPlayer(playercount);
-            //активировать ивент по рандомному игроку
-            
 
-            /*ивент события что босс ударил по конкретному игроку
-                в потоке игрока есть опрос произошел ли этот ивент,
-                если да, то идет проверка уклонился ли игрок или нет
-                , если игрок не уклонился, то по нему проходит эффективный урон
-            int dmg = bosss->damage - players[playerid].defense;
-            в конце ивент деактивировать*/
-            
-            
-            
+            BossDMG();
+            cdAttack = GetTickCount();
         }
         /*если время с прошлой атаки + время ожидания
             больше чем текущее время, то можно бить спец. атакой*/
-        if (cdSpecialAttack + bosss->specialCooldown > GetTickCount())
+        else if (cdSpecialAttack + boss.specialCooldown < GetTickCount())
         {
-            //активировать ивент
+            //SPECIALDAMAGEBOSS();
+            PulseEvent(BOSSSPECDMG);
+            cdSpecialAttack = GetTickCount();
+        }
+        
+    }
+    
+    return 0;
+}
+DWORD WINAPI ENDGAME(LPVOID lp) 
+{
+    WaitForSingleObject(PlayersDied,INFINITE);
+    cout<<"типо топ 3 игрока" << endl;
 
 
-            /*в потоках игроков идет опрос сделался ли этот ивент,
-                ивент должен активироваться сразу у всех игроковб,
-                затем идет проверка уклонился ли игрок, если нет,
-                то проходит эффективный урон
-            int specDmg = bosss->specialDamage - защита игрока
-            в конце ивент деактивировать*/
-        }
-         //ударил ли ктото по боссу (использовать мьютекс, возможно семафор)
-        if (true)
+    if (playerCountLife < 0)
+        cout << "Boss winner" << endl;
+    else
+        cout<<"players winner"<< endl;
+	ResetEvent(PlayersDied);
+
+    return 0;
+}
+DWORD WINAPI PlayerWaitBossSpecDMGThread(LPVOID P)
+{
+    //в отдельный поток
+    
+    Player* playr = (Player*)P;
+    while (playr->health>0)
+    {
+        DWORD waitResult = WaitForSingleObject(BOSSSPECDMG, INFINITE);
+
+        if (waitResult == WAIT_OBJECT_0)
         {
-            bosss->health - (players[0].damage - bosss->resist);
-        }
-        //ударил ли ктото по боссу спец. атакой (использовать мьютекс, возможно семафор)
-        if (true)
-        {
-            bosss->health - (players[0].damage - bosss->resist);
+
+            SPECIALDAMAGEBOSS(*playr);
+            ResetEvent(BOSSSPECDMG);
+
+
         }
     }
-
+    
+    return 0;
 }
-
 //поток игроков
 DWORD WINAPI PlayerThread(LPVOID P)
 {
     Player* playr = (Player*)P;
+    HANDLE PlayerWaitBossSpecDMG = CreateThread(NULL, 0, PlayerWaitBossSpecDMGThread, playr, 0, NULL);
     long cdAttack = GetTickCount();
     long cdSpecialAttack = GetTickCount();
     while (playr->health > 0)
     {
-        //опрос на получения урона обычной атаки босса
-        if (true)
+        WaitForSingleObject(dmgSemafor, INFINITE);
+        if (playr->health > 0)
         {
-            if (dodge())
+            if (cdAttack + playr->attackCooldown < GetTickCount())
             {
-                cout << playr->name << "уклонился от атаки босса" << endl;
+                double EndSpDmg = playr->damage * (100 - boss.resist) / 100;
+                boss.health -= EndSpDmg;
+                cout << "босс получил урон " << EndSpDmg << " от " << playr->name << endl;
+                cdAttack = GetTickCount();
+                cout << boss.health << endl;
             }
-            else
+            else if (cdSpecialAttack + playr->specialCooldown < GetTickCount())
             {
-                playr->health - (boss.damage - playr->defense);
-                cout << playr->name << "получил урон от босса:" << (boss.damage - playr->defense) <<endl;
+                double EndSpDmg = playr->specialDamage * (100 - boss.resist) / 100;
+                boss.health -= EndSpDmg;
+                cout << "босс получил урон спец. атакой " << EndSpDmg << " от " << playr->name << endl;
+                cdSpecialAttack = GetTickCount();
+                cout << boss.health << endl;
             }
         }
 
+        
+
+        
+        
+        
 
 
-        //опрос на получения урона спец. атаки босса
-        if (true)
-        {
-            if (dodge())
-            {
-                cout << playr->name << "уклонился от атаки босса" << endl;
-            }
-            else
-            {
-                playr->health - (boss.specialDamage - playr->defense);
-                cout << playr->name << "получил урон от спец. атаки босса:" << (boss.specialDamage - playr->defense) << endl;
-            }
-        }
-        //кд для обычных атак
-        if(cdAttack + playr->attackCooldown > GetTickCount())
-        {
 
-        }
+       
+        
+        ReleaseSemaphore(dmgSemafor,1,NULL);
     }
+    cout<< playr->name <<" умер" << endl;
+    CloseHandle(PlayerWaitBossSpecDMG);
+
+    if (playerCountLife >= 1)
+    {
+        playerCountLife--;
+        if(playerCountLife == 0)
+            SetEvent(PlayersDied);
+    }
+        
+    cout << playerCountLife << " живых игроков" << endl;
+    return 0;
 }
 
 
-//void BossInit()
-//{
-//    if (!CreateThread())
-//    {
-//
-//    }
-//}
-
-
-
+//придумать как хранить топ3 по урону, есть структура топ 3, при каждом нанесении урона игроком, сравнивать его урон с топ 3 и если он больше, то вставлять его в топ 3, а тот кто был на 3 месте удалять из топ 3
 int main()
 {
     srand(0);
     setlocale(0,"ru");
     //назначил количество игроков
     playercount = HowManyPlayers();
+    playerCountLife = playercount;
     cout<<"Кол-во игроков"<<playercount << endl;
     //выбрал имена
     SelectNameForPlayers();
+    PlayersDied = CreateEvent(NULL,FALSE,FALSE,NULL);
+    BOSSSPECDMG = CreateEvent(NULL,TRUE,FALSE,NULL);
+    dmgSemafor = CreateSemaphore(NULL,1,1,NULL);
+    HANDLE threads[11];
+    for (int i = 0; i < playercount; i++)
+    {
+        topthree[i].id = i;
+        threads[i] = CreateThread(NULL, 0, PlayerThread, &players[i], 0, NULL);
+    }
+    cout<<"Игроки зашли к боссу" << endl;
+    HANDLE bosssss = CreateThread(NULL,0,BossThread,NULL,0,NULL);
+    
 
+    endgame = CreateThread(NULL, 0, ENDGAME, NULL, 0, NULL);
+
+    WaitForMultipleObjects(playercount,threads,TRUE,INFINITE);
+    WaitForSingleObject(bosssss, INFINITE);
+    
+    cout<<"Игра окончена ктото победил" << endl;
+    cout<<boss.health << endl;
+    cout<<playerCountLife<< endl;
+    for (int i = 0; i < playercount; i++)
+    {
+         
+        CloseHandle(threads[i]);
+    }
+    CloseHandle(bosssss);
+    CloseHandle(BOSSSPECDMG);
+    CloseHandle(PlayersDied);
+    CloseHandle(dmgSemafor);
+    
     
 
 

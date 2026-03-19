@@ -1,4 +1,10 @@
 ﻿  13SYS.cpp
-C:\Users\st310-09\Desktop\13SYS\13SYS.cpp(11,18): warning C4305: инициализация: усечение из "__int64" в "long"
-C:\Users\st310-09\Desktop\13SYS\13SYS.cpp(11,18): warning C4309: инициализация: усечение константного значения
-  13SYS.vcxproj -> C:\Users\st310-09\Desktop\13SYS\x64\Debug\13SYS.exe
+C:\Users\m20er\OneDrive\Рабочий стол\pract13SYS\pract13SYS\13SYS\13SYS.cpp(105,38): warning C4244: -=: преобразование "double" в "long", возможна потеря данных
+C:\Users\m20er\OneDrive\Рабочий стол\pract13SYS\pract13SYS\13SYS\13SYS.cpp(123,25): warning C4244: -=: преобразование "double" в "long", возможна потеря данных
+C:\Users\m20er\OneDrive\Рабочий стол\pract13SYS\pract13SYS\13SYS\13SYS.cpp(145,43): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\m20er\OneDrive\Рабочий стол\pract13SYS\pract13SYS\13SYS\13SYS.cpp(153,57): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\m20er\OneDrive\Рабочий стол\pract13SYS\pract13SYS\13SYS\13SYS.cpp(227,50): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\m20er\OneDrive\Рабочий стол\pract13SYS\pract13SYS\13SYS\13SYS.cpp(230,32): warning C4244: -=: преобразование "double" в "long", возможна потеря данных
+C:\Users\m20er\OneDrive\Рабочий стол\pract13SYS\pract13SYS\13SYS\13SYS.cpp(235,63): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\m20er\OneDrive\Рабочий стол\pract13SYS\pract13SYS\13SYS\13SYS.cpp(238,32): warning C4244: -=: преобразование "double" в "long", возможна потеря данных
+  13SYS.vcxproj -> C:\Users\m20er\OneDrive\Рабочий стол\pract13SYS\pract13SYS\13SYS\x64\Debug\13SYS.exe
