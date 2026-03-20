@@ -5,7 +5,7 @@ using namespace std;
 
 struct Boss
 {
-    long health = 9000000;
+    long health = 90000000;
     int resist = 44;
     int damage = 73843;
     int specialDamage = 150000;
@@ -103,6 +103,7 @@ void BossDMG()
         playerid = getRandomPlayer(playercount);
     } while (players[playerid].health <= 0);
 
+
     if (dodge())
     {
         cout << players[playerid].name << "Уклонился от атаки" << endl;
@@ -112,23 +113,26 @@ void BossDMG()
         
         double EndSpDmg = (boss.damage / 100) * (100 - players[playerid].defense);
         players[playerid].health -=  EndSpDmg;
-        cout << players[playerid].name << "получил урон от босса" << EndSpDmg << endl;
+        cout << players[playerid].name << "получил урон от босса " << EndSpDmg << endl;
+        
     }
 }
 //метод нанесения спуц. атак всем живым игрокам
-void SPECIALDAMAGEBOSS(Player p)
+void SPECIALDAMAGEBOSS(Player P)
 {
     
-    
+    Player p = P;
         if (dodge())
         {
             cout << p.name << " уклонился от спец. атаки босса" << endl;
         }
         else
         {
+            
             double SpDmg = boss.damage * (1 - 0.05 * (playercount - 1));
             double EndSpDmg = (SpDmg / 100) * (100 - p.defense);
             p.health -= EndSpDmg;
+            
             cout << p.name << " получил урон спец. атаки босса"<< EndSpDmg<< endl;
         }
         
@@ -145,19 +149,18 @@ DWORD WINAPI BossThread(LPVOID B)
     while (boss.health > 0 && playerCountLife>0)
     {
         
-        /*если время с прошлой атаки + время ожидания
-            больше чем текущее время, то можно бить обычной атакой*/
+   
         if(cdAttack + boss.attackCooldown < GetTickCount())
         {
 
             BossDMG();
             cdAttack = GetTickCount();
         }
-        /*если время с прошлой атаки + время ожидания
-            больше чем текущее время, то можно бить спец. атакой*/
+        
         else if (cdSpecialAttack + boss.specialCooldown < GetTickCount())
         {
             //SPECIALDAMAGEBOSS();
+            
             PulseEvent(BOSSSPECDMG);
             cdSpecialAttack = GetTickCount();
         }
@@ -172,15 +175,19 @@ DWORD WINAPI ENDGAME(LPVOID lp)
     
 
 
-    if (playerCountLife < 0)
+    if (playerCountLife >0 && boss.health < 0)
+    {
+        cout << "players winner" << endl;
+        cout << "ХП босса" << boss.health << endl;
+        
+    }    
+    else
     {
         cout << "Boss winner" << endl;
         cout << "ХП босса" << boss.health << endl;
     }
 
-    
-    else
-        cout<<"players winner"<< endl;
+        
 
 
     for (int i = 0; i < 3; i++)
@@ -227,11 +234,15 @@ DWORD WINAPI PlayerThread(LPVOID P)
     HANDLE PlayerWaitBossSpecDMG = CreateThread(NULL, 0, PlayerWaitBossSpecDMGThread, playr, 0, NULL);
     long cdAttack = GetTickCount();
     long cdSpecialAttack = GetTickCount();
-    while (playr->health > 0)
+    while (playr->health > 0 )
     {
 
         WaitForSingleObject(dmgSemafor, INFINITE);
-        if (playr->health > 0)
+        if (boss.health<0)
+        {
+            break;
+        }
+        if (playr->health >0)
         {
             if (cdAttack + playr->attackCooldown < GetTickCount())
             {
@@ -251,6 +262,7 @@ DWORD WINAPI PlayerThread(LPVOID P)
                 cdSpecialAttack = GetTickCount();
                 cout << boss.health << endl;
             }
+
         }
 
         
