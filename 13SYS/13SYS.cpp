@@ -15,7 +15,7 @@ struct Boss
 };
 struct Player
 {
-    long health = 70000;
+    long health = 500000;
     int damage = 12000;
     int specialDamage = 30000;
     int specialCooldown = 5000;
@@ -28,7 +28,7 @@ struct Player
 
 struct Top
 {
-	int id;
+	char Name[64];
 	int totaldamage;
 };
 
@@ -43,7 +43,7 @@ HANDLE endgame;
 int playercount;
 //количество живых игроков
 int playerCountLife;
-Top topthree[10] = {0};
+Top topthree[3];
 
 
 //массив игроков
@@ -105,7 +105,7 @@ void BossDMG()
 
     if (dodge())
     {
-        cout << players[playerid].name << "Уклонрился от атаки" << endl;
+        cout << players[playerid].name << "Уклонился от атаки" << endl;
     }
     else
     {
@@ -169,13 +169,24 @@ DWORD WINAPI BossThread(LPVOID B)
 DWORD WINAPI ENDGAME(LPVOID lp) 
 {
     WaitForSingleObject(PlayersDied,INFINITE);
-    cout<<"типо топ 3 игрока" << endl;
+    
 
 
     if (playerCountLife < 0)
+    {
         cout << "Boss winner" << endl;
+        cout << "ХП босса" << boss.health << endl;
+    }
+
+    
     else
         cout<<"players winner"<< endl;
+
+
+    for (int i = 0; i < 3; i++)
+    {
+        cout <<"Игрок "<<topthree[i].Name <<" нанес " << topthree[i].totaldamage<<" урона"   <<endl;
+    }
 	ResetEvent(PlayersDied);
 
     return 0;
@@ -189,27 +200,36 @@ DWORD WINAPI PlayerWaitBossSpecDMGThread(LPVOID P)
     {
         DWORD waitResult = WaitForSingleObject(BOSSSPECDMG, INFINITE);
 
-        if (waitResult == WAIT_OBJECT_0)
+        if (playr->health > 0)
         {
+            if (waitResult == WAIT_OBJECT_0)
+            {
 
-            SPECIALDAMAGEBOSS(*playr);
-            ResetEvent(BOSSSPECDMG);
-
-
+                SPECIALDAMAGEBOSS(*playr);
+                ResetEvent(BOSSSPECDMG);
+            }
         }
+        
     }
-    
+
     return 0;
 }
 //поток игроков
 DWORD WINAPI PlayerThread(LPVOID P)
 {
     Player* playr = (Player*)P;
+    Top dmg;
+    dmg.totaldamage = 0;
+    strcpy_s(dmg.Name, playr->name);
+
+    
+    
     HANDLE PlayerWaitBossSpecDMG = CreateThread(NULL, 0, PlayerWaitBossSpecDMGThread, playr, 0, NULL);
     long cdAttack = GetTickCount();
     long cdSpecialAttack = GetTickCount();
     while (playr->health > 0)
     {
+
         WaitForSingleObject(dmgSemafor, INFINITE);
         if (playr->health > 0)
         {
@@ -217,6 +237,7 @@ DWORD WINAPI PlayerThread(LPVOID P)
             {
                 double EndSpDmg = playr->damage * (100 - boss.resist) / 100;
                 boss.health -= EndSpDmg;
+                dmg.totaldamage += EndSpDmg;
                 cout << "босс получил урон " << EndSpDmg << " от " << playr->name << endl;
                 cdAttack = GetTickCount();
                 cout << boss.health << endl;
@@ -225,6 +246,7 @@ DWORD WINAPI PlayerThread(LPVOID P)
             {
                 double EndSpDmg = playr->specialDamage * (100 - boss.resist) / 100;
                 boss.health -= EndSpDmg;
+                dmg.totaldamage += EndSpDmg;
                 cout << "босс получил урон спец. атакой " << EndSpDmg << " от " << playr->name << endl;
                 cdSpecialAttack = GetTickCount();
                 cout << boss.health << endl;
@@ -232,19 +254,24 @@ DWORD WINAPI PlayerThread(LPVOID P)
         }
 
         
-
-        
-        
-        
-
-
-
-       
-        
         ReleaseSemaphore(dmgSemafor,1,NULL);
     }
-    cout<< playr->name <<" умер" << endl;
+    cout <<playr->name <<" - игрок умер и больше не должен получать урон от спец атак босса--------------------------------------------" << endl;
     CloseHandle(PlayerWaitBossSpecDMG);
+
+    if (playerCountLife == 3)
+    {
+        topthree[2] = dmg;
+    }
+    else if (playerCountLife == 2)
+    {
+        topthree[1] = dmg;
+    }
+    else if (playerCountLife == 1)
+    {
+        topthree[0] = dmg;
+    }
+
 
     if (playerCountLife >= 1)
     {
@@ -258,7 +285,9 @@ DWORD WINAPI PlayerThread(LPVOID P)
 }
 
 
-//придумать как хранить топ3 по урону, есть структура топ 3, при каждом нанесении урона игроком, сравнивать его урон с топ 3 и если он больше, то вставлять его в топ 3, а тот кто был на 3 месте удалять из топ 3
+//придумать как хранить топ3 по урону, есть структура топ 3,
+// при каждом нанесении урона игроком, сравнивать его урон с топ 3
+// и если он больше, то вставлять его в топ 3, а тот кто был на 3 месте удалять из топ 3
 int main()
 {
     srand(0);
@@ -275,7 +304,7 @@ int main()
     HANDLE threads[11];
     for (int i = 0; i < playercount; i++)
     {
-        topthree[i].id = i;
+       
         threads[i] = CreateThread(NULL, 0, PlayerThread, &players[i], 0, NULL);
     }
     cout<<"Игроки зашли к боссу" << endl;
@@ -287,8 +316,8 @@ int main()
     WaitForMultipleObjects(playercount,threads,TRUE,INFINITE);
     WaitForSingleObject(bosssss, INFINITE);
     
-    cout<<"Игра окончена ктото победил" << endl;
-    cout<<boss.health << endl;
+    
+    
     cout<<playerCountLife<< endl;
     for (int i = 0; i < playercount; i++)
     {
